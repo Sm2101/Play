@@ -1,48 +1,96 @@
 import os
-import logging
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-import PyPDF2
+import fitz  # PyMuPDF
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, MessageHandler, filters,
+    CallbackQueryHandler, ContextTypes
+)
 
-# Logging (so we can see messages in Render logs)
-logging.basicConfig(level=logging.INFO)
-print("🚀 Starting bot on Render...")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
-# Get your token (from environment or direct value)
-TOKEN = os.getenv("BOT_TOKEN")  # safer way
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN not found! Please set it in Render Environment.")
 
-if not TOKEN:
-    print("❌ ERROR: BOT_TOKEN not found! Please set it in Render Environment.")
-    exit()
-
-# Define /start command
+# Step 1: Start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Hi! Send me a PDF with questions, and I’ll show one sample question from it.")
+    await update.message.reply_text(
+        "👋 Send me a PDF containing questions, and I'll turn it into a quiz!"
+    )
 
-# When user sends a PDF
-async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Step 2: Handle PDF uploads
+async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await update.message.document.get_file()
-    await file.download_to_drive("questions.pdf")
+    file_path = "uploaded.pdf"
+    await file.download_to_drive(file_path)
 
     # Extract text from PDF
+    text = extract_text_from_pdf(file_path)
+    questions = extract_questions(text)
+
+    if not questions:
+        await update.message.reply_text("😕 No questions found in that PDF.")
+        return
+
+    context.user_data["questions"] = questions
+    context.user_data["score"] = 0
+    context.user_data["current"] = 0
+
+    await send_next_question(update, context)
+
+# Step 3: Extract text
+def extract_text_from_pdf(pdf_path):
     text = ""
-    with open("questions.pdf", "rb") as f:
-        reader = PyPDF2.PdfReader(f)
-        for page in reader.pages:
-            text += page.extract_text()
+    with fitz.open(pdf_path) as pdf:
+        for page in pdf:
+            text += page.get_text()
+    return text
 
-    # Find and send first question-like line
-    for line in text.split("\n"):
-        if "?" in line:
-            await update.message.reply_text(f"❓ {line}")
-            break
-    else:
-        await update.message.reply_text("No question found in the PDF 😢")
+# Step 4: Simple question extraction
+def extract_questions(text):
+    lines = text.split("\n")
+    questions = [line.strip() for line in lines if "?" in line and len(line.split()) > 3]
+    # Limit to first 5 questions
+    return questions[:5]
 
-# Create and run the bot
-app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
+# Step 5: Send quiz question
+async def send_next_question(update, context):
+    idx = context.user_data["current"]
+    questions = context.user_data["questions"]
 
-print("✅ Bot setup done. Polling now...")
-app.run_polling()
+    if idx >= len(questions):
+        score = context.user_data["score"]
+        await update.message.reply_text(f"🎉 Quiz complete! Your score: {score}/{len(questions)}")
+        return
+
+    q = questions[idx]
+    # Fake options for demo (you can later extract real ones)
+    options = ["Option A", "Option B", "Option C", "Option D"]
+
+    keyboard = [
+        [InlineKeyboardButton(opt, callback_data=opt)] for opt in options
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    await update.message.reply_text(f"Q{idx+1}. {q}", reply_markup=reply_markup)
+
+# Step 6: Handle answers
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data["score"] += 1  # For now, always count as correct
+    context.user_data["current"] += 1
+
+    await query.edit_message_text(f"✅ Answer received!")
+    await send_next_question(query, context)
+
+# Step 7: Run bot
+if __name__ == "__main__":
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.Document.PDF, handle_document))
+    app.add_handler(CallbackQueryHandler(button))
+
+    print("🚀 Bot running...")
+    app.run_polling()
