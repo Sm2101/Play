@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PDF Quiz Extractor</title>
+  <title>Smart PDF Quiz Bot</title>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1>🧠 PDF Quiz Extractor</h1>
+    <h1>📘 Smart PDF Quiz Bot</h1>
 
-    <input type="file" id="pdfFile" accept=".pdf" />
+    <input type="file" id="pdfFile" accept="application/pdf" />
     <button id="extractBtn">Extract Questions</button>
-
-    <div id="loader" class="hidden">Extracting questions… please wait ⏳</div>
+    <p id="loader" class="hidden">Extracting questions... ⏳</p>
 
     <div id="quiz-box" class="hidden">
-      <div id="timer">⏱ 30s</div>
+      <div class="quiz-header">
+        <span id="timer">⏱ 00s</span>
+      </div>
       <div id="question-area"></div>
       <div id="options-area"></div>
       <div class="nav-buttons">
@@ -26,7 +28,6 @@
     </div>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
