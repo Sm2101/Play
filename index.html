@@ -1,22 +1,132 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart PDF Quiz Bot</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NeoQuiz — Futuristic CBT Portal</title>
+
+  <!-- Link to CSS (separate file) -->
   <link rel="stylesheet" href="style.css" />
+
+  <!-- pdf.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    // point pdf.js to CDN worker (required for GitHub Pages)
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+  </script>
 </head>
 <body>
-  <div class="container">
-    <h1>📘 Smart PDF Quiz Bot</h1>
-
-    <input type="file" id="pdfFile" accept="application/pdf" />
-    <button id="extractBtn">Extract Questions</button>
-    <p id="loader" class="hidden">Extracting questions... ⏳</p>
-
-    <div id="quiz-box" class="hidden">
-      <div class="quiz-header">
-        <span id="timer">⏱ 00s</span>
+  <div id="app" class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">NeoQuiz</div>
+        <div class="subtitle">Futuristic CBT Portal</div>
       </div>
-      <div id="question-area"></div>
-      <div id="options-area"></di
+
+      <div class="top-actions">
+        <button id="fullscreenBtn" class="btn ghost">Fullscreen</button>
+        <button id="exportBtn" class="btn">Export Qs</button>
+        <button id="resetBtn" class="btn ghost">Reset</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- LEFT: controls & palette -->
+      <aside class="panel left">
+        <div class="card upload-card">
+          <div class="row">
+            <label class="fileLabel neon" for="pdfInput">Upload PDF</label>
+            <input id="pdfInput" type="file" accept="application/pdf" />
+          </div>
+          <div class="row">
+            <label class="fileLabel neon amber" for="jsonInput">Import JSON/CSV</label>
+            <input id="jsonInput" type="file" accept=".json,.csv" />
+          </div>
+
+          <div class="settings">
+            <label class="small">Per-question (sec)</label>
+            <input id="perQtime" type="number" value="30" min="5" />
+            <label class="small"><input id="shuffleOpts" type="checkbox" /> Shuffle options</label>
+            <label class="small"><input id="shuffleQs" type="checkbox" /> Shuffle questions</label>
+          </div>
+        </div>
+
+        <div class="card palette-card">
+          <div class="small muted">Question Palette</div>
+          <div id="palette" class="palette"></div>
+        </div>
+      </aside>
+
+      <!-- CENTER: question view -->
+      <section class="panel center">
+        <div class="card question-card">
+          <div class="qtop">
+            <div id="qIndex" class="qindex">Q -</div>
+            <div id="examTitle" class="examTitle">Untitled</div>
+          </div>
+
+          <div id="questionText" class="questionText">Upload a PDF or import questions to begin.</div>
+          <div id="questionMeta" class="muted small"></div>
+
+          <div id="options" class="options"></div>
+
+          <div class="controls">
+            <button id="saveNext" class="btn">Save & Next (S)</button>
+            <button id="clearResp" class="btn ghost">Clear</button>
+            <button id="markReview" class="btn ghost">Mark (M)</button>
+            <button id="flagBtn" class="btn ghost">Flag</button>
+            <button id="submitExam" class="btn danger" style="margin-left:auto">Submit</button>
+          </div>
+
+          <div class="kbd-hint muted">Keys: 1-4 select • N Next • P Prev • S Save • M Mark • F Flag</div>
+        </div>
+
+        <div class="card progress-card">
+          <div class="progressBarWrap">
+            <div id="progressFill" class="progressFill" style="width:0%"></div>
+          </div>
+          <div class="progressText small muted">Answered: <span id="progressText">0/0</span></div>
+        </div>
+      </section>
+
+      <!-- RIGHT: timers & stats -->
+      <aside class="panel right">
+        <div class="card timerCard">
+          <div class="small muted">Global Timer</div>
+          <div id="globalTimer" class="timerLarge">00:00:00</div>
+        </div>
+
+        <div class="card timerCard">
+          <div class="small muted">Per-question</div>
+          <div id="perTimer" class="timerLarge">00s</div>
+        </div>
+
+        <div class="card statsCard">
+          <div class="small muted">Quick Actions</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            <button id="prevBtn" class="btn ghost">Previous (P)</button>
+            <button id="nextBtn" class="btn">Next (N)</button>
+            <button id="jumpUn" class="btn ghost">Jump to Unanswered</button>
+          </div>
+        </div>
+
+        <div class="card statsCard">
+          <div class="small muted">Stats</div>
+          <div class="muted small" style="margin-top:8px">
+            Attempted: <span id="statAttempted">0</span><br>
+            Marked: <span id="statMarked">0</span><br>
+            Flagged: <span id="statFlagged">0</span><br>
+            Unattempted: <span id="statUnattempted">0</span>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer muted">NeoQuiz — offline CBT portal • Works on GitHub Pages • Made for fast mock tests</footer>
+  </div>
+
+  <!-- Link to script file (separate) -->
+  <script src="script.js"></script>
+</body>
+</html>
