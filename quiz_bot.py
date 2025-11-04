@@ -21,7 +21,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await update.message.document.get_file()
     file_path = "uploaded.pdf"
-    await file.download_to_drive(file_path)
+    await file.download(custom_path=file_path)
 
     # Extract text from PDF
     text = extract_text_from_pdf(file_path)
@@ -94,4 +94,5 @@ if __name__ == "__main__":
 
     print("🚀 Bot running...")
     app.run_polling()
+
 
