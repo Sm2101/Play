@@ -1,5 +1,5 @@
 import os
-import fitz  # PyMuPDF
+import pdfplumber
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, CommandHandler, MessageHandler, filters,
@@ -40,9 +40,9 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Step 3: Extract text
 def extract_text_from_pdf(pdf_path):
     text = ""
-    with fitz.open(pdf_path) as pdf:
-        for page in pdf:
-            text += page.get_text()
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
     return text
 
 # Step 4: Simple question extraction
@@ -94,3 +94,4 @@ if __name__ == "__main__":
 
     print("🚀 Bot running...")
     app.run_polling()
+
