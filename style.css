@@ -1,70 +1,314 @@
+/* === NEOQUIZ — Futuristic CBT UI === */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --panel: #14141d;
+  --text: #eaeaea;
+  --muted: #888;
+  --accent: #00e5ff;
+  --amber: #ffb300;
+  --danger: #ff4c4c;
+  --success: #00ff99;
+  --radius: 14px;
+  --shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+  --transition: 0.25s ease-in-out;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: #121212;
-  color: #fff;
-  font-family: "Poppins", sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', sans-serif;
+  overflow-x: hidden;
+}
+
+.app {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
-.container {
-  width: 90%;
-  max-width: 700px;
-  background: #1e1e1e;
-  border-radius: 16px;
-  padding: 20px 30px;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+.topbar {
+  background: #0d0d13;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 30px;
+  box-shadow: var(--shadow);
+  z-index: 10;
+  position: sticky;
+  top: 0;
 }
 
-h1 {
-  text-align: center;
-  color: #03dac5;
-  margin-bottom: 20px;
+.logo {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 1px;
 }
 
-button {
-  background: #03dac5;
-  border: none;
+.subtitle {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.top-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  background: var(--accent);
   color: #000;
-  font-weight: bold;
-  padding: 10px 20px;
-  margin: 5px;
-  border-radius: 8px;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-weight: 600;
   cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
 }
 
-button:hover {
-  background: #00bfa5;
+.btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
 }
 
-.hidden {
+.btn.ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn.danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  padding: 20px;
+  gap: 20px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel.left {
+  width: 23%;
+}
+
+.panel.center {
+  width: 54%;
+}
+
+.panel.right {
+  width: 23%;
+}
+
+.card {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.card:hover {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+}
+
+.upload-card input {
   display: none;
 }
 
-.quiz-header {
-  display: flex;
-  justify-content: flex-end;
+.fileLabel {
+  display: block;
+  background: var(--accent);
+  color: #000;
+  font-weight: 600;
+  text-align: center;
+  padding: 10px;
+  border-radius: var(--radius);
+  cursor: pointer;
   margin-bottom: 10px;
-  font-size: 18px;
+  transition: var(--transition);
+}
+
+.fileLabel.amber {
+  background: var(--amber);
+}
+
+.fileLabel:hover {
+  transform: scale(1.05);
+}
+
+.settings {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.small {
+  font-size: 0.8rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.neon {
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.question-card .qtop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.qindex {
+  color: var(--amber);
+  font-weight: 600;
+  font-size: 1.2rem;
+}
+
+.examTitle {
+  font-size: 1rem;
+  color: var(--muted);
+}
+
+.questionText {
+  margin-top: 10px;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.options {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .option {
-  background: #292929;
-  margin: 8px 0;
-  padding: 10px;
-  border-radius: 10px;
+  background: #1d1d29;
+  padding: 10px 14px;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: 0.3s;
+  transition: var(--transition);
 }
 
 .option:hover {
-  background: #03dac5;
-  color: black;
+  background: rgba(0, 229, 255, 0.15);
 }
 
-.nav-buttons {
+.option.selected {
+  background: var(--accent);
+  color: #000;
+}
+
+.controls {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 15px;
+}
+
+.palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.palette button {
+  background: #1d1d29;
+  border: none;
+  border-radius: 8px;
+  color: var(--text);
+  height: 35px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: 600;
+}
+
+.palette button:hover {
+  transform: scale(1.1);
+}
+
+.palette button.answered {
+  background: var(--accent);
+  color: #000;
+}
+
+.palette button.marked {
+  background: var(--amber);
+  color: #000;
+}
+
+.palette button.flagged {
+  background: var(--danger);
+  color: #fff;
+}
+
+.timerCard .timerLarge {
+  font-size: 1.5rem;
+  margin-top: 8px;
+  color: var(--accent);
+  text-align: center;
+}
+
+.progressBarWrap {
+  width: 100%;
+  height: 8px;
+  background: #222;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 8px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  margin-top: 6px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.8rem;
+  padding: 10px;
+  color: var(--muted);
+  border-top: 1px solid #111;
+}
+
+/* --- responsive --- */
+@media (max-width: 1000px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .panel.left,
+  .panel.center,
+  .panel.right {
+    width: 100%;
+  }
+
+  .topbar {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
 }
