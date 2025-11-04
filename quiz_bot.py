@@ -1,36 +1,39 @@
-import re
 import os
-from flask import Flask, request
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+import logging
 import pdfplumber
+import re
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
+from flask import Flask, request
 
-# --- Load environment ---
-TOKEN = os.getenv("BOT_TOKEN")
-APP_URL = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}"
-PORT = int(os.environ.get("PORT", 5000))
+# Logging for debug
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
-# --- Create app and bot ---
-app = Flask(__name__)
-application = Application.builder().token(TOKEN).build()
+# Telegram Bot Token (from Render environment variable)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+if not BOT_TOKEN:
+    raise ValueError("❌ BOT_TOKEN not found! Please set it in Render environment.")
+
+# Flask app (for webhook keep-alive)
+flask_app = Flask(__name__)
+
+# Telegram app
+application = Application.builder().token(BOT_TOKEN).build()
 
 
-# --- Commands ---
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("👋 Hello! Send me a PDF, and I’ll create quiz questions from it!")
-
-async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles uploaded PDF and extracts text"""
-    if not update.message.document:
-        await update.message.reply_text("Please send a valid PDF file 📄")
-        return
-
-    file = await update.message.document.get_file()
-    file_path = "/tmp/temp.pdf"
-    await file.download_to_drive(custom_path=file_path)
-
-    try:
-         def extract_questions_from_pdf(pdf_path):
+# 🟢 Function to extract questions from PDF
+def extract_questions_from_pdf(pdf_path):
     questions = []
     with pdfplumber.open(pdf_path) as pdf:
         text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
@@ -54,42 +57,60 @@ async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return questions
 
-        # Basic response
-        await update.message.reply_text("✅ Got your PDF! Generating quiz...")
-        if len(text.strip()) > 50:
-            await update.message.reply_text("📚 Example extract:\n\n" + text[:500] + "...")
-        else:
-            await update.message.reply_text("⚠️ Couldn't extract much text from your PDF.")
-    except Exception as e:
-        await update.message.reply_text(f"❌ Error reading PDF: {e}")
+
+# 🟢 Start Command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("👋 Hello! Send me a PDF and I’ll create quiz questions from it.")
 
 
-# --- Register handlers ---
+# 🟢 Handle PDF Upload
+async def handle_pdf(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pdf_file = await update.message.document.get_file()
+    pdf_path = f"/tmp/{update.message.document.file_name}"
+    await pdf_file.download_to_drive(pdf_path)
+
+    await update.message.reply_text("✅ Got your PDF! Generating quiz...")
+
+    questions = extract_questions_from_pdf(pdf_path)
+    if not questions:
+        await update.message.reply_text("❌ No valid questions found in this PDF.")
+        return
+
+    await update.message.reply_text("📘 Example quiz extract:")
+    for q in questions[:3]:
+        formatted = f"*Question:*\n{q['question']}\n\n" + "\n".join(q['options'])
+        await update.message.reply_text(formatted, parse_mode="Markdown")
+
+    await update.message.reply_text("✅ Done! Interactive quiz feature coming next...")
+
+
+# 🟢 Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(MessageHandler(filters.Document.PDF, handle_pdf))
 
 
-# --- Flask Routes ---
-@app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-    """Telegram webhook endpoint"""
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    application.update_queue.put_nowait(update)
-    return "OK", 200
-
-@app.route("/")
-def index():
-    return "🤖 Bot is alive!", 200
+# 🟢 Flask route for Render ping
+@flask_app.route('/')
+def home():
+    return "Quiz Bot is running!", 200
 
 
-# --- Start bot via webhook ---
-if __name__ == "__main__":
-    print("🚀 Starting bot on Render (webhook mode)...")
+# 🟢 Webhook setup (for Render)
+if __name__ == '__main__':
+    import threading
+
+    # Run Flask on a separate thread
+    def run_flask():
+        flask_app.run(host="0.0.0.0", port=10000)
+
+    threading.Thread(target=run_flask).start()
+
+    PORT = int(os.environ.get("PORT", 10000))
+    RENDER_EXTERNAL_URL = os.environ.get("RENDER_EXTERNAL_URL", "https://your-render-url.onrender.com")
+
     application.run_webhook(
         listen="0.0.0.0",
         port=PORT,
-        url_path=TOKEN,
-        webhook_url=f"{APP_URL}/{TOKEN}"
+        url_path=BOT_TOKEN,
+        webhook_url=f"{RENDER_EXTERNAL_URL}/{BOT_TOKEN}"
     )
-    app.run(host="0.0.0.0", port=PORT)
-
