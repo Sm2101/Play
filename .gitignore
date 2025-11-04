@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-uploaded.pdf
-*.sqlite3
-.vscode/
-.env
-
