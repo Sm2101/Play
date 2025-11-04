@@ -1,8 +1,9 @@
-let pdfText = "";
 let questions = [];
 let current = 0;
 let timer;
 let timeLeft = 30;
+
+// ========== ELEMENTS ==========
 const pdfFile = document.getElementById("pdfFile");
 const extractBtn = document.getElementById("extractBtn");
 const loader = document.getElementById("loader");
@@ -11,6 +12,7 @@ const qArea = document.getElementById("question-area");
 const optArea = document.getElementById("options-area");
 const timerEl = document.getElementById("timer");
 
+// ========== EVENTS ==========
 extractBtn.onclick = async () => {
   const file = pdfFile.files[0];
   if (!file) return alert("Please upload a PDF file!");
@@ -19,13 +21,15 @@ extractBtn.onclick = async () => {
   const text = await extractPDF(file);
   loader.classList.add("hidden");
 
-  pdfText = text;
-  questions = parseQuestions(pdfText);
-  if (questions.length === 0) return alert("No questions found!");
-
+  questions = parseSmartQuestions(text);
+  if (questions.length === 0) {
+    alert("❌ No valid questions found! Try a clearer question paper.");
+    return;
+  }
   startQuiz();
 };
 
+// ========== PDF READER ==========
 async function extractPDF(file) {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -33,34 +37,47 @@ async function extractPDF(file) {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    text += content.items.map((t) => t.str).join(" ");
+    const pageText = content.items.map((t) => t.str).join(" ");
+    text += "\n" + pageText;
   }
   return text;
 }
 
-function parseQuestions(text) {
-  const pattern = /(\d+\.\s.*?)(?=\d+\.|$)/gs;
-  const matches = text.match(pattern);
-  if (!matches) return [];
+// ========== SMART PARSER ==========
+function parseSmartQuestions(rawText) {
+  // Clean text: remove multiple spaces and unwanted words
+  let text = rawText
+    .replace(/\s+/g, " ")
+    .replace(/Page\s*\d+/gi, "")
+    .replace(/Section\s*[A-Z]/gi, "")
+    .trim();
 
-  return matches.map((q) => {
-    const parts = q.split(/[\(a\)\(b\)\(c\)\(d\)]/i);
-    const question = parts[0].trim();
-    const opts = q.match(/\(a\)(.*?)\(b\)(.*?)\(c\)(.*?)\(d\)(.*)/i);
-    return opts
-      ? {
-          question,
-          options: [opts[1], opts[2], opts[3], opts[4]].map((o) =>
-            o ? o.trim() : ""
-          ),
-        }
-      : { question, options: [] };
-  });
+  // Regex for question blocks like: "1. What is...? (a) ... (b) ... (c) ... (d) ..."
+  const regex =
+    /(\d+[\.\)]\s*[^(\d\.)]+?)\s*(?:\(a\)|a\))\s*(.+?)\s*(?:\(b\)|b\))\s*(.+?)\s*(?:\(c\)|c\))\s*(.+?)\s*(?:\(d\)|d\))\s*(.+?)(?=\d+[\.\)]|$)/gis;
+
+  let matches = [...text.matchAll(regex)];
+  let parsed = matches.map((m) => ({
+    question: cleanText(m[1]),
+    options: [m[2], m[3], m[4], m[5]].map(cleanText),
+  }));
+
+  // Remove garbage or incomplete questions
+  parsed = parsed.filter(
+    (q) => q.question.length > 10 && q.options.every((o) => o.length > 0)
+  );
+
+  return parsed;
 }
 
+function cleanText(t) {
+  return t.replace(/\s+/g, " ").replace(/[^\w\s,.'’\-+/*=°]/g, "").trim();
+}
+
+// ========== QUIZ UI ==========
 function startQuiz() {
-  quizBox.classList.remove("hidden");
   current = 0;
+  quizBox.classList.remove("hidden");
   showQuestion();
 }
 
@@ -82,6 +99,7 @@ function showQuestion() {
     div.classList.add("option");
     div.textContent = opt;
     div.onclick = () => {
+      document.querySelectorAll(".option").forEach((o) => (o.style.background = "#292929"));
       div.style.background = "#03dac5";
     };
     optArea.appendChild(div);
